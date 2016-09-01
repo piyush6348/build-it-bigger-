@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -12,6 +13,9 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.dell.myapplication.backend.myApi.MyApi;
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.InterstitialAd;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.extensions.android.json.AndroidJsonFactory;
 
@@ -25,6 +29,7 @@ public class MainActivity extends ActionBarActivity {
     private ProgressBar spinner;
     private String joke;
     private RelativeLayout relativeLayout;
+    private InterstitialAd interstitialAd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +39,17 @@ public class MainActivity extends ActionBarActivity {
         spinner = (ProgressBar)findViewById(R.id.progressBar1);
         spinner.setVisibility(View.VISIBLE);
         new EndpointsAsyncTask().execute();
+        
+        interstitialAd = new InterstitialAd(this);
+        interstitialAd.setAdUnitId("ca-app-pub-8037008543529602/2054128571");
+
+        requestNewInterstitial();
+    }
+
+    private void requestNewInterstitial() {
+        AdRequest adRequest = new AdRequest.Builder()
+                .build();
+        interstitialAd.loadAd(adRequest);
     }
 
 
@@ -61,6 +77,30 @@ public class MainActivity extends ActionBarActivity {
 
     public void tellJoke(View view) {
        // Toast.makeText(this, "derp", Toast.LENGTH_SHORT).show();
+
+        interstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdLoaded() {
+                super.onAdLoaded();
+                interstitialAd.show();
+                Log.e("add loaded","done");
+            }
+            @Override
+            public void onAdClosed() {
+                // requestNewInterstitial();
+                newActivity();
+            }
+        });
+      /*  if(interstitialAd.isLoaded())
+            interstitialAd.show();
+        else
+        {
+           newActivity();
+        }*/
+
+    }
+    public void newActivity()
+    {
         Bundle b=new Bundle();
         b.putString("joke",joke);
         Intent i=new Intent(this,ImageActivity.class);
@@ -68,10 +108,10 @@ public class MainActivity extends ActionBarActivity {
         startActivity(i);
     }
 
-    class EndpointsAsyncTask extends AsyncTask<Void, Void, String> {
+   public class EndpointsAsyncTask extends AsyncTask<Void, Void, String> {
 
         @Override
-        protected String doInBackground(Void... params) {
+        public String doInBackground(Void... params) {
             if(myApiService == null) {  // Only do this once
                 MyApi.Builder builder = new MyApi.Builder(AndroidHttp.newCompatibleTransport(),
                         new AndroidJsonFactory(), null)
